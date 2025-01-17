@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option csharp_namespace = "PVRProtos";
+
+import "google/protobuf/empty.proto";
+package cfg;
+
+service Cfg {
+  rpc GetSingleConfig(ConfigData) returns (ConfigEntry);
+  rpc GetAllConfig(google.protobuf.Empty) returns (ConfigResponse);
+  rpc UpdateConfig(ConfigUpdateRequest) returns (UpdateConfigResponse);
+  rpc DeleteConfig(ConfigEntry) returns (DeleteConfigResult);
+}
+
+message ConfigResponse {
+  repeated ConfigEntry entries = 1;
+}
+
+message ConfigData {
+  string configName = 1;
+}
+
+message ConfigEntry {
+  string configName = 1;
+  string configValue = 2;
+  string configDescription = 3;
+}
+
+message ConfigUpdateRequest {
+  repeated UpdateConfigEntry entries = 1;
+}
+
+message UpdateConfigEntry{
+  string configName = 1;
+  string configValue = 2;
+  string configDescription = 3;
+  bool isClientConfig = 4; 
+}
+
+message UpdateConfigResponse {
+  bool result = 1;
+}
+
+message DeleteConfigResult {
+  bool success = 1;
+}

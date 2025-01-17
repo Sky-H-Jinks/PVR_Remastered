@@ -1,0 +1,28 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "PVRProtos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+package Log;
+
+service Logger {
+  rpc SendLog(LogRoot) returns (LogResponse);
+}
+
+message LogRoot {
+  repeated LogDetails details = 1;
+}
+
+message LogDetails {
+  string source = 1;
+  string message = 2;
+  google.protobuf.StringValue stackTrace = 3;
+  google.protobuf.Timestamp raisedAt = 4;
+  string clientVersion = 5;
+  string logLevel = 6;
+}
+
+message LogResponse {
+  bool accepted = 1;
+}

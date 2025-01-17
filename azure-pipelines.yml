@@ -1,0 +1,97 @@
+trigger:
+- master
+
+variables:
+  buildVersion: '1.2.5.0'
+  agentPool: 'PersonalMachine'
+  agentName: 'SKY-DEV'
+  debugConfiguration: 'Debug'
+  releaseConfiguration: 'Release'
+  dotnetSdkVersion: '8.0.x'
+  solutionFile: 'PVR_Remastered.sln'
+
+stages:
+- stage: BuildAndTestDebug
+  displayName: Build Debug and Run Tests
+  jobs:
+  - job: BuildDebug
+    displayName: Build Debug
+    pool:
+      name: '$(agentPool)'
+      demands:
+        - Agent.Name -equals $(agentName)
+    steps:
+    - checkout: self
+      clean: true
+
+    - script: dir "$(System.DefaultWorkingDirectory)"
+      displayName: "List Directory Contents"
+
+    - task: UseDotNet@2
+      displayName: Install .NET $(dotnetSdkVersion) SDK
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
+
+    - script: |
+        echo "Checking/Installing MAUI workload..."
+        dotnet workload install maui
+      displayName: Install MAUI Workload
+
+    - script: |
+        echo "Restoring .NET workloads..."
+        dotnet workload restore
+      displayName: Restore .NET Workloads
+
+    - script: |
+        echo "Building solution in $(debugConfiguration) configuration with version $(buildVersion)..."
+        dotnet build $(solutionFile) --configuration $(debugConfiguration) -p:Version=$(buildVersion)
+      displayName: Build Solution (Debug)
+      
+    # Needed when a better setup is done  
+    #- script: |
+    #    echo "Running tests..."
+    #    dotnet test "PVRTests\PVRTests.csproj" --configuration $(debugConfiguration)
+    #  displayName: Run Tests
+    #  env:
+    #    ASPNETCORE_ENVIRONMENT: Test
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Debug Artifacts
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)\build\$(buildVersion)'
+        ArtifactName: 'DebugBuild'
+
+- stage: BuildRelease
+  displayName: Build Release
+  dependsOn: BuildAndTestDebug
+  jobs:
+  - job: BuildRelease
+    displayName: Build Release
+    pool:
+      name: '$(agentPool)'
+      demands:
+        - Agent.Name -equals $(agentName)
+    steps:
+    - checkout: self
+      clean: true
+
+    - script: dir "$(System.DefaultWorkingDirectory)"
+      displayName: "List Directory Contents"
+
+    - task: UseDotNet@2
+      displayName: Install .NET $(dotnetSdkVersion) SDK
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
+
+    - script: |
+        echo "Building solution in $(releaseConfiguration) configuration with version $(buildVersion)..."
+        dotnet build $(solutionFile) --configuration $(releaseConfiguration) -p:Version=$(buildVersion)
+      displayName: Build Solution (Release)
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Release Artifacts
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)\build\$(buildVersion)'
+        ArtifactName: 'ReleaseBuild'
